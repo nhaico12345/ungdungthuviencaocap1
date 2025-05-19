@@ -7,33 +7,35 @@ using System.Text;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using DevExpress.XtraEditors; // Nếu sử dụng control của DevExpress
+using DevExpress.XtraEditors;
 using System.Data.SQLite;
 using ExcelDataReader;
-using QRCoder; // Thư viện mã QR
-using System.Drawing.Imaging; // Cho ImageFormat
-using System.IO; // Cho các thao tác với tệp và thư mục
+using QRCoder;
+using System.Drawing.Imaging;
+using System.IO;
 
 namespace ungdungthuviencaocap
 {
-	// Định nghĩa lớp một phần, liên kết với tệp quanlysach.Designer.cs
 	public partial class quanlysach : DevExpress.XtraEditors.XtraForm
 	{
-		Modify modify; // Thể hiện của lớp truy cập dữ liệu
+		Modify modify;
 
-		// Hàm khởi tạo
 		public quanlysach()
 		{
 			InitializeComponent();
+			// Cho phép nhập liệu tự do vào ComboBox
+			comboBox_theloai.DropDownStyle = ComboBoxStyle.DropDown;
+			comboBox_tacgia.DropDownStyle = ComboBoxStyle.DropDown;
+			comboBox_nhaxuatban.DropDownStyle = ComboBoxStyle.DropDown;
 		}
 
-		// Trình xử lý sự kiện Load của Form
 		private void quanlysach_Load(object sender, EventArgs e)
 		{
 			try
 			{
 				modify = new Modify();
 				LoadDataGridView();
+				LoadComboBoxData();
 			}
 			catch (Exception ex)
 			{
@@ -41,12 +43,41 @@ namespace ungdungthuviencaocap
 			}
 		}
 
+		private void LoadComboBoxData()
+		{
+			try
+			{
+				List<string> tenTheLoaiList = modify.GetAllTenTheLoai();
+				comboBox_theloai.DataSource = null;
+				comboBox_theloai.Items.Clear(); // Xóa item cũ trước khi thêm mới
+				if (tenTheLoaiList != null) comboBox_theloai.Items.AddRange(tenTheLoaiList.ToArray());
+				comboBox_theloai.Text = ""; // Để trống ban đầu
+
+				List<string> tenTacGiaList = modify.GetAllAuthorNames();
+				comboBox_tacgia.DataSource = null;
+				comboBox_tacgia.Items.Clear();
+				if (tenTacGiaList != null) comboBox_tacgia.Items.AddRange(tenTacGiaList.ToArray());
+				comboBox_tacgia.Text = "";
+
+				List<string> tenNXBList = modify.GetAllTenNhaXuatBan();
+				comboBox_nhaxuatban.DataSource = null;
+				comboBox_nhaxuatban.Items.Clear();
+				if (tenNXBList != null) comboBox_nhaxuatban.Items.AddRange(tenNXBList.ToArray());
+				comboBox_nhaxuatban.Text = "";
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show("Lỗi khi tải dữ liệu cho ComboBox: " + ex.Message, "Lỗi Dữ Liệu", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
+
+
 		private void LoadDataGridView()
 		{
 			try
 			{
 				dataGridView1.DataSource = null;
-				dataGridView1.DataSource = modify.getAllbook();
+				dataGridView1.DataSource = modify.getAllbooks();
 
 				if (dataGridView1.Columns.Count > 0)
 				{
@@ -95,113 +126,33 @@ namespace ungdungthuviencaocap
 			try
 			{
 				string Tensach = this.textBox_tensach.Text.Trim();
-				string TheloaiInput = this.textBox_theloai.Text.Trim(); // Lấy thể loại từ textbox
-				string TacgiaInput = this.textBox_tacgia.Text.Trim();
-				string Nhaxuatban = this.textBox_nhaxuatban.Text.Trim();
+				string TheloaiInput = this.comboBox_theloai.Text.Trim();
+				string TacgiaInput = this.comboBox_tacgia.Text.Trim();
+				string NhaxuatbanInput = this.comboBox_nhaxuatban.Text.Trim();
 				int soluong;
 				int Namxuatban;
 
 				if (string.IsNullOrWhiteSpace(Tensach)) { MessageBox.Show("Tên sách không được để trống.", "Thiếu Thông Tin", MessageBoxButtons.OK, MessageBoxIcon.Warning); textBox_tensach.Focus(); return; }
-				if (string.IsNullOrWhiteSpace(TheloaiInput)) { MessageBox.Show("Thể loại không được để trống.", "Thiếu Thông Tin", MessageBoxButtons.OK, MessageBoxIcon.Warning); textBox_theloai.Focus(); return; } // Kiểm tra thể loại
-				if (string.IsNullOrWhiteSpace(TacgiaInput)) { MessageBox.Show("Tên tác giả không được để trống.", "Thiếu Thông Tin", MessageBoxButtons.OK, MessageBoxIcon.Warning); textBox_tacgia.Focus(); return; }
+				if (string.IsNullOrWhiteSpace(TheloaiInput)) { MessageBox.Show("Thể loại không được để trống.", "Thiếu Thông Tin", MessageBoxButtons.OK, MessageBoxIcon.Warning); comboBox_theloai.Focus(); return; }
+				if (string.IsNullOrWhiteSpace(TacgiaInput)) { MessageBox.Show("Tên tác giả không được để trống.", "Thiếu Thông Tin", MessageBoxButtons.OK, MessageBoxIcon.Warning); comboBox_tacgia.Focus(); return; }
+				if (string.IsNullOrWhiteSpace(NhaxuatbanInput)) { MessageBox.Show("Tên nhà xuất bản không được để trống.", "Thiếu Thông Tin", MessageBoxButtons.OK, MessageBoxIcon.Warning); comboBox_nhaxuatban.Focus(); return; }
 				if (!int.TryParse(this.textBox_soluong.Text, out soluong) || soluong < 0) { MessageBox.Show("Số lượng phải là một số nguyên không âm.", "Dữ Liệu Không Hợp Lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning); textBox_soluong.Focus(); return; }
 				if (!int.TryParse(this.textBox_namxuatban.Text, out Namxuatban) || Namxuatban <= 1000 || Namxuatban > DateTime.Now.Year + 1) { MessageBox.Show($"Năm xuất bản không hợp lệ. Phải là số nguyên (ví dụ: 1990 - {DateTime.Now.Year + 1}).", "Dữ Liệu Không Hợp Lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning); textBox_namxuatban.Focus(); return; }
 
-				bool proceedWithSavingBook = true;
-				bool shouldAddNewAuthor = false;
+				// Tự động thêm nếu chưa có
+				modify.AddTheLoaiIfNotExists(TheloaiInput);
+				modify.AddTacGiaIfNotExists(TacgiaInput); // Giả sử bạn đã tạo hàm này trong Modify.cs
+				modify.AddNhaXuatBanIfNotExists(NhaxuatbanInput);
 
-				List<TacGia> existingAuthors = modify.GetAuthorsByName(TacgiaInput);
-				if (existingAuthors == null) { return; }
 
-				if (existingAuthors.Count == 0)
+				sachquanly newSach = new sachquanly(0, null, Tensach, TheloaiInput, TacgiaInput, soluong, NhaxuatbanInput, Namxuatban);
+				if (modify.Insert(newSach))
 				{
-					Console.WriteLine($"Tác giả '{TacgiaInput}' chưa tồn tại. Sẽ tự động thêm mới.");
-					shouldAddNewAuthor = true;
+					MessageBox.Show("Thêm sách thành công!", "Thông Báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					LoadDataGridView();
+					LoadComboBoxData(); // Tải lại ComboBox để có thể có item mới
+					clear();
 				}
-				else
-				{
-					List<string> existingBookTitles = modify.GetBookTitlesByAuthorName(TacgiaInput, 5);
-					StringBuilder messageBuilder = new StringBuilder();
-					messageBuilder.AppendLine($"Tên tác giả '{TacgiaInput}' đã tồn tại trong hệ thống.");
-					messageBuilder.AppendLine("--------------------------------------");
-					messageBuilder.AppendLine("Các bản ghi TÁC GIẢ trùng tên:");
-					if (existingAuthors.Count > 0)
-					{
-						int authorCount = 0;
-						foreach (var author in existingAuthors)
-						{
-							if (authorCount < 5) { messageBuilder.AppendLine($" - Mã: {author.MaTacGia}, Tên: {author.HoTen}"); }
-							else if (authorCount == 5) { messageBuilder.AppendLine("   (và có thể nhiều hơn...)"); break; }
-							authorCount++;
-						}
-					}
-					else { messageBuilder.AppendLine(" (Không tìm thấy chi tiết tác giả trùng tên - có thể có lỗi)"); }
-					messageBuilder.AppendLine("--------------------------------------");
-					messageBuilder.AppendLine("Một số SÁCH có tên tác giả này:");
-					if (existingBookTitles.Count > 0)
-					{
-						foreach (var title in existingBookTitles) { messageBuilder.AppendLine($" - {title}"); }
-						if (existingBookTitles.Count >= 5) { messageBuilder.AppendLine("   (và có thể nhiều hơn...)"); }
-					}
-					else { messageBuilder.AppendLine(" (Chưa tìm thấy sách nào có tên tác giả này trong CSDL)"); }
-					messageBuilder.AppendLine("--------------------------------------");
-					messageBuilder.AppendLine("\nBạn muốn xử lý thế nào?");
-					messageBuilder.AppendLine("\n - YES: Thêm tác giả MỚI (dù trùng tên).");
-					messageBuilder.AppendLine(" - NO:  Chỉ dùng tên này cho sách, KHÔNG tạo tác giả mới.");
-					messageBuilder.AppendLine(" - CANCEL: Hủy bỏ việc thêm sách.");
-
-					DialogResult userChoice = MessageBox.Show(messageBuilder.ToString(), "Xác nhận Tác giả Trùng tên", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
-					switch (userChoice)
-					{
-						case DialogResult.Yes: shouldAddNewAuthor = true; proceedWithSavingBook = true; break;
-						case DialogResult.No: shouldAddNewAuthor = false; proceedWithSavingBook = true; break;
-						case DialogResult.Cancel: proceedWithSavingBook = false; shouldAddNewAuthor = false; break;
-					}
-				}
-
-				if (proceedWithSavingBook)
-				{
-					// Thêm thể loại vào bảng TheLoai nếu chưa tồn tại
-					if (!string.IsNullOrWhiteSpace(TheloaiInput))
-					{
-						if (!modify.AddTheLoaiIfNotExists(TheloaiInput))
-						{
-							// Nếu có lỗi khi thêm thể loại, có thể dừng hoặc thông báo người dùng
-							// Hiện tại, chúng ta vẫn tiếp tục thêm sách nhưng thể loại có thể không được đồng bộ đúng
-							Console.WriteLine($"Cảnh báo: Có lỗi khi cố gắng thêm thể loại '{TheloaiInput}' vào bảng TheLoai.");
-						}
-					}
-
-
-					sachquanly newSach = new sachquanly(0, null, Tensach, TheloaiInput, TacgiaInput, soluong, Nhaxuatban, Namxuatban);
-					if (modify.Insert(newSach))
-					{
-						if (shouldAddNewAuthor)
-						{
-							try
-							{
-								TacGia authorToAdd = new TacGia { HoTen = TacgiaInput }; // Chỉ cần HoTen, MaTacGia sẽ tự tạo
-								if (modify.InsertTacGia(authorToAdd))
-								{
-									Console.WriteLine($"Đã tự động thêm tác giả mới: '{TacgiaInput}' (Mã: {authorToAdd.MaTacGia})");
-								}
-								else
-								{
-									Console.WriteLine($"Không thể tự động thêm tác giả mới: '{TacgiaInput}'");
-								}
-							}
-							catch (Exception authorEx)
-							{
-								Console.WriteLine($"Lỗi khi tự động thêm tác giả '{TacgiaInput}': {authorEx.Message}");
-							}
-						}
-						MessageBox.Show("Thêm sách thành công!", "Thông Báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-						LoadDataGridView();
-						clear();
-					}
-					// else: modify.Insert đã hiển thị lỗi
-				}
-				// else: Người dùng đã hủy hoặc có lỗi trước đó
 			}
 			catch (Exception ex)
 			{
@@ -241,12 +192,15 @@ namespace ungdungthuviencaocap
 				}
 
 				string Tensach = this.textBox_tensach.Text.Trim();
-				string TheloaiInput = this.textBox_theloai.Text.Trim(); // Lấy thể loại từ textbox
-				string Tacgia = this.textBox_tacgia.Text.Trim();
-				string Nhaxuatban = this.textBox_nhaxuatban.Text.Trim();
+				string TheloaiInput = this.comboBox_theloai.Text.Trim();
+				string TacgiaInput = this.comboBox_tacgia.Text.Trim();
+				string NhaxuatbanInput = this.comboBox_nhaxuatban.Text.Trim();
 
 				if (string.IsNullOrWhiteSpace(Tensach)) { MessageBox.Show("Tên sách không được để trống.", "Thiếu Thông Tin", MessageBoxButtons.OK, MessageBoxIcon.Warning); textBox_tensach.Focus(); return; }
-				if (string.IsNullOrWhiteSpace(TheloaiInput)) { MessageBox.Show("Thể loại không được để trống.", "Thiếu Thông Tin", MessageBoxButtons.OK, MessageBoxIcon.Warning); textBox_theloai.Focus(); return; } // Kiểm tra thể loại
+				if (string.IsNullOrWhiteSpace(TheloaiInput)) { MessageBox.Show("Thể loại không được để trống.", "Thiếu Thông Tin", MessageBoxButtons.OK, MessageBoxIcon.Warning); comboBox_theloai.Focus(); return; }
+				if (string.IsNullOrWhiteSpace(TacgiaInput)) { MessageBox.Show("Tên tác giả không được để trống.", "Thiếu Thông Tin", MessageBoxButtons.OK, MessageBoxIcon.Warning); comboBox_tacgia.Focus(); return; }
+				if (string.IsNullOrWhiteSpace(NhaxuatbanInput)) { MessageBox.Show("Tên nhà xuất bản không được để trống.", "Thiếu Thông Tin", MessageBoxButtons.OK, MessageBoxIcon.Warning); comboBox_nhaxuatban.Focus(); return; }
+
 
 				int soluong;
 				if (!int.TryParse(this.textBox_soluong.Text, out soluong) || soluong < 0) { MessageBox.Show("Số lượng phải là một số nguyên không âm.", "Dữ Liệu Không Hợp Lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning); textBox_soluong.Focus(); return; }
@@ -254,22 +208,18 @@ namespace ungdungthuviencaocap
 				int Namxuatban;
 				if (!int.TryParse(this.textBox_namxuatban.Text, out Namxuatban) || Namxuatban <= 1000 || Namxuatban > DateTime.Now.Year + 1) { MessageBox.Show($"Năm xuất bản không hợp lệ. Phải là số nguyên (ví dụ: 1990 - {DateTime.Now.Year + 1}).", "Dữ Liệu Không Hợp Lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning); textBox_namxuatban.Focus(); return; }
 
-				// Thêm thể loại vào bảng TheLoai nếu chưa tồn tại (TRƯỚC KHI CẬP NHẬT SÁCH)
-				if (!string.IsNullOrWhiteSpace(TheloaiInput))
-				{
-					if (!modify.AddTheLoaiIfNotExists(TheloaiInput))
-					{
-						// Xử lý lỗi nếu cần, ví dụ: thông báo cho người dùng
-						Console.WriteLine($"Cảnh báo: Có lỗi khi cố gắng thêm/kiểm tra thể loại '{TheloaiInput}' trong bảng TheLoai khi cập nhật sách.");
-					}
-				}
+				// Tự động thêm nếu chưa có
+				modify.AddTheLoaiIfNotExists(TheloaiInput);
+				modify.AddTacGiaIfNotExists(TacgiaInput);
+				modify.AddNhaXuatBanIfNotExists(NhaxuatbanInput);
 
-				sachquanly updatedSach = new sachquanly(ID, Masach, Tensach, TheloaiInput, Tacgia, soluong, Nhaxuatban, Namxuatban);
+				sachquanly updatedSach = new sachquanly(ID, Masach, Tensach, TheloaiInput, TacgiaInput, soluong, NhaxuatbanInput, Namxuatban);
 
 				if (modify.Update(updatedSach))
 				{
 					MessageBox.Show("Sửa thông tin sách thành công!", "Thông Báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
 					LoadDataGridView();
+					LoadComboBoxData(); // Tải lại ComboBox để có thể có item mới
 					clear();
 				}
 				else
@@ -358,10 +308,13 @@ namespace ungdungthuviencaocap
 		public void clear()
 		{
 			textBox_tensach.Text = "";
-			textBox_theloai.Text = "";
-			textBox_tacgia.Text = "";
+			comboBox_theloai.Text = ""; // Xóa text đã nhập
+			comboBox_tacgia.Text = "";
+			comboBox_nhaxuatban.Text = "";
+			comboBox_theloai.SelectedIndex = -1; // Bỏ chọn item
+			comboBox_tacgia.SelectedIndex = -1;
+			comboBox_nhaxuatban.SelectedIndex = -1;
 			textBox_soluong.Text = "";
-			textBox_nhaxuatban.Text = "";
 			textBox_namxuatban.Text = "";
 			textBox_timkiem.Text = "";
 			dataGridView1.ClearSelection();
@@ -372,6 +325,7 @@ namespace ungdungthuviencaocap
 		{
 			clear();
 			LoadDataGridView();
+			LoadComboBoxData();
 		}
 
 		private void button_nhapdulieu_Click(object sender, EventArgs e)
@@ -405,14 +359,18 @@ namespace ungdungthuviencaocap
 
 							foreach (var book in booksFromExcel)
 							{
-								// Tự động thêm thể loại từ file Excel vào bảng TheLoai nếu chưa có
 								if (!string.IsNullOrWhiteSpace(book.Theloai))
 								{
-									if (!modify.AddTheLoaiIfNotExists(book.Theloai))
-									{
-										// Ghi log hoặc thông báo nếu việc thêm thể loại tự động gặp lỗi
-										processDetails.AppendLine($"- Cảnh báo: Lỗi khi thêm/kiểm tra thể loại '{book.Theloai}' cho sách '{book.Tensach}'.");
-									}
+									modify.AddTheLoaiIfNotExists(book.Theloai);
+								}
+
+								if (!string.IsNullOrWhiteSpace(book.Nhaxuatban))
+								{
+									modify.AddNhaXuatBanIfNotExists(book.Nhaxuatban);
+								}
+								if (!string.IsNullOrWhiteSpace(book.Tacgia))
+								{
+									modify.AddTacGiaIfNotExists(book.Tacgia);
 								}
 
 
@@ -436,6 +394,7 @@ namespace ungdungthuviencaocap
 								}
 							}
 							LoadDataGridView();
+							LoadComboBoxData();
 
 							string message = $"Nhập dữ liệu từ file Excel hoàn tất.\n\n" +
 											 $"- Số sách mới được thêm: {addedCount}\n" +
@@ -453,7 +412,7 @@ namespace ungdungthuviencaocap
 								{
 									try
 									{
-										string logFilePath = "import_log.txt";
+										string logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "import_log.txt");
 										File.AppendAllText(logFilePath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Import từ '{filePath}'\n{processDetails.ToString()}\n\n");
 										message += $"\n\n(Chi tiết xử lý đã được ghi vào file {logFilePath})";
 									}
@@ -502,21 +461,6 @@ namespace ungdungthuviencaocap
 				{
 					MessageBox.Show("Không tìm thấy sách nào phù hợp với từ khóa '" + searchKeyword + "'.", "Không Tìm Thấy", MessageBoxButtons.OK, MessageBoxIcon.Information);
 				}
-				else
-				{
-					if (dataGridView1.Columns.Count > 0)
-					{
-						try { dataGridView1.Columns["ID"].Visible = false; } catch { }
-						try { dataGridView1.Columns["Masach"].HeaderText = "Mã sách"; } catch { }
-						try { dataGridView1.Columns["TenSach"].HeaderText = "Tên sách"; } catch { }
-						try { dataGridView1.Columns["TheLoai"].HeaderText = "Thể loại"; } catch { }
-						try { dataGridView1.Columns["TacGia"].HeaderText = "Tác giả"; } catch { }
-						try { dataGridView1.Columns["SoLuong"].HeaderText = "Số lượng"; } catch { }
-						try { dataGridView1.Columns["NhaXuatBan"].HeaderText = "Nhà xuất bản"; } catch { }
-						try { dataGridView1.Columns["NamXuatBan"].HeaderText = "Năm xuất bản"; } catch { }
-						try { dataGridView1.Columns["TenSach"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill; } catch { }
-					}
-				}
 			}
 			catch (Exception ex)
 			{
@@ -544,10 +488,13 @@ namespace ungdungthuviencaocap
 				{
 					DataGridViewRow row = dataGridView1.Rows[e.RowIndex];
 					textBox_tensach.Text = row.Cells["Tensach"]?.Value?.ToString() ?? "";
-					textBox_theloai.Text = row.Cells["Theloai"]?.Value?.ToString() ?? "";
-					textBox_tacgia.Text = row.Cells["Tacgia"]?.Value?.ToString() ?? "";
+
+					// Khi click vào DataGridView, set Text cho ComboBoxes
+					comboBox_theloai.Text = row.Cells["TheLoai"]?.Value?.ToString() ?? "";
+					comboBox_tacgia.Text = row.Cells["TacGia"]?.Value?.ToString() ?? "";
+					comboBox_nhaxuatban.Text = row.Cells["NhaXuatBan"]?.Value?.ToString() ?? "";
+
 					textBox_soluong.Text = row.Cells["SoLuong"]?.Value?.ToString() ?? row.Cells["soluong"]?.Value?.ToString() ?? "";
-					textBox_nhaxuatban.Text = row.Cells["NhaXuatBan"]?.Value?.ToString() ?? "";
 					textBox_namxuatban.Text = row.Cells["NamXuatBan"]?.Value?.ToString() ?? "";
 				}
 			}
@@ -613,7 +560,7 @@ namespace ungdungthuviencaocap
 						}
 						else
 						{
-							dtBooks = modify.getAllbook();
+							dtBooks = modify.getAllbooks();
 							if (dtBooks != null && dtBooks.Rows.Count > 0)
 							{
 								MessageBox.Show($"Sẽ xuất mã QR cho tất cả {dtBooks.Rows.Count} sách trong cơ sở dữ liệu.", "Thông Báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -689,7 +636,7 @@ namespace ungdungthuviencaocap
 						{
 							try
 							{
-								string logFilePath = "qrcode_error_log.txt";
+								string logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "qrcode_error_log.txt");
 								File.AppendAllText(logFilePath, errors.ToString() + "\n\n");
 								resultMessage += $"\n\n(Chi tiết lỗi đã được ghi vào file {logFilePath})";
 							}
@@ -713,11 +660,6 @@ namespace ungdungthuviencaocap
 
 		private void quanlysach_FormClosing(object sender, FormClosingEventArgs e)
 		{
-			// Ví dụ: Xác nhận trước khi đóng
-			// if (MessageBox.Show("Bạn có chắc muốn đóng cửa sổ quản lý sách?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
-			// {
-			//     e.Cancel = true; // Hủy thao tác đóng
-			// }
 		}
 	}
 }

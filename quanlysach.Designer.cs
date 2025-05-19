@@ -35,9 +35,6 @@
             this.label5 = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
             this.textBox_tensach = new System.Windows.Forms.TextBox();
-            this.textBox_theloai = new System.Windows.Forms.TextBox();
-            this.textBox_nhaxuatban = new System.Windows.Forms.TextBox();
-            this.textBox_tacgia = new System.Windows.Forms.TextBox();
             this.textBox_soluong = new System.Windows.Forms.TextBox();
             this.textBox_namxuatban = new System.Windows.Forms.TextBox();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
@@ -50,6 +47,9 @@
             this.button_suathongtin = new System.Windows.Forms.Button();
             this.button_themsach = new System.Windows.Forms.Button();
             this.xuatmaqr = new System.Windows.Forms.Button();
+            this.comboBox_theloai = new System.Windows.Forms.ComboBox();
+            this.comboBox_tacgia = new System.Windows.Forms.ComboBox();
+            this.comboBox_nhaxuatban = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -122,40 +122,13 @@
             this.textBox_tensach.Size = new System.Drawing.Size(256, 27);
             this.textBox_tensach.TabIndex = 6;
             // 
-            // textBox_theloai
-            // 
-            this.textBox_theloai.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox_theloai.Location = new System.Drawing.Point(200, 87);
-            this.textBox_theloai.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.textBox_theloai.Name = "textBox_theloai";
-            this.textBox_theloai.Size = new System.Drawing.Size(256, 27);
-            this.textBox_theloai.TabIndex = 7;
-            // 
-            // textBox_nhaxuatban
-            // 
-            this.textBox_nhaxuatban.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox_nhaxuatban.Location = new System.Drawing.Point(200, 133);
-            this.textBox_nhaxuatban.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.textBox_nhaxuatban.Name = "textBox_nhaxuatban";
-            this.textBox_nhaxuatban.Size = new System.Drawing.Size(256, 27);
-            this.textBox_nhaxuatban.TabIndex = 8;
-            // 
-            // textBox_tacgia
-            // 
-            this.textBox_tacgia.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox_tacgia.Location = new System.Drawing.Point(824, 42);
-            this.textBox_tacgia.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.textBox_tacgia.Name = "textBox_tacgia";
-            this.textBox_tacgia.Size = new System.Drawing.Size(241, 27);
-            this.textBox_tacgia.TabIndex = 9;
-            // 
             // textBox_soluong
             // 
             this.textBox_soluong.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox_soluong.Location = new System.Drawing.Point(824, 87);
+            this.textBox_soluong.Location = new System.Drawing.Point(826, 87);
             this.textBox_soluong.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.textBox_soluong.Name = "textBox_soluong";
-            this.textBox_soluong.Size = new System.Drawing.Size(241, 27);
+            this.textBox_soluong.Size = new System.Drawing.Size(239, 27);
             this.textBox_soluong.TabIndex = 10;
             // 
             // textBox_namxuatban
@@ -323,6 +296,36 @@
             this.xuatmaqr.UseVisualStyleBackColor = false;
             this.xuatmaqr.Click += new System.EventHandler(this.xuatmaqr_Click);
             // 
+            // comboBox_theloai
+            // 
+            this.comboBox_theloai.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.comboBox_theloai.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(163)));
+            this.comboBox_theloai.FormattingEnabled = true;
+            this.comboBox_theloai.Location = new System.Drawing.Point(200, 87);
+            this.comboBox_theloai.Name = "comboBox_theloai";
+            this.comboBox_theloai.Size = new System.Drawing.Size(256, 27);
+            this.comboBox_theloai.TabIndex = 22;
+            // 
+            // comboBox_tacgia
+            // 
+            this.comboBox_tacgia.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.comboBox_tacgia.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(163)));
+            this.comboBox_tacgia.FormattingEnabled = true;
+            this.comboBox_tacgia.Location = new System.Drawing.Point(826, 36);
+            this.comboBox_tacgia.Name = "comboBox_tacgia";
+            this.comboBox_tacgia.Size = new System.Drawing.Size(239, 27);
+            this.comboBox_tacgia.TabIndex = 23;
+            // 
+            // comboBox_nhaxuatban
+            // 
+            this.comboBox_nhaxuatban.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.comboBox_nhaxuatban.Font = new System.Drawing.Font("Tahoma", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(163)));
+            this.comboBox_nhaxuatban.FormattingEnabled = true;
+            this.comboBox_nhaxuatban.Location = new System.Drawing.Point(200, 132);
+            this.comboBox_nhaxuatban.Name = "comboBox_nhaxuatban";
+            this.comboBox_nhaxuatban.Size = new System.Drawing.Size(256, 27);
+            this.comboBox_nhaxuatban.TabIndex = 24;
+            // 
             // quanlysach
             // 
             this.Appearance.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
@@ -333,6 +336,9 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.ClientSize = new System.Drawing.Size(1159, 677);
+            this.Controls.Add(this.comboBox_nhaxuatban);
+            this.Controls.Add(this.comboBox_tacgia);
+            this.Controls.Add(this.comboBox_theloai);
             this.Controls.Add(this.xuatmaqr);
             this.Controls.Add(this.button_timvitrisach);
             this.Controls.Add(this.textBox_timkiem);
@@ -345,9 +351,6 @@
             this.Controls.Add(this.button_themsach);
             this.Controls.Add(this.textBox_namxuatban);
             this.Controls.Add(this.textBox_soluong);
-            this.Controls.Add(this.textBox_tacgia);
-            this.Controls.Add(this.textBox_nhaxuatban);
-            this.Controls.Add(this.textBox_theloai);
             this.Controls.Add(this.textBox_tensach);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.label5);
@@ -377,9 +380,6 @@
 		private System.Windows.Forms.Label label5;
 		private System.Windows.Forms.Label label6;
 		private System.Windows.Forms.TextBox textBox_tensach;
-		private System.Windows.Forms.TextBox textBox_theloai;
-		private System.Windows.Forms.TextBox textBox_nhaxuatban;
-		private System.Windows.Forms.TextBox textBox_tacgia;
 		private System.Windows.Forms.TextBox textBox_soluong;
 		private System.Windows.Forms.TextBox textBox_namxuatban;
 		private System.Windows.Forms.Button button_themsach;
@@ -392,5 +392,8 @@
 		private System.Windows.Forms.TextBox textBox_timkiem;
 		private System.Windows.Forms.Button button_timvitrisach;
 		private System.Windows.Forms.Button xuatmaqr;
+		private System.Windows.Forms.ComboBox comboBox_theloai;
+		private System.Windows.Forms.ComboBox comboBox_tacgia;
+		private System.Windows.Forms.ComboBox comboBox_nhaxuatban;
 	}
 }

@@ -23,7 +23,7 @@ namespace ungdungthuviencaocap
 			modify = new Modify();
 			try
 			{
-				dataGridView1.DataSource = modify.getAllbook();
+				dataGridView1.DataSource = modify.getAllbooks();
 				dataGridView1.Columns["ID"].Visible = false;
 				dataGridView1.Columns["anh"].Visible = false;
 				dataGridView1.Columns["pdf"].Visible = false;

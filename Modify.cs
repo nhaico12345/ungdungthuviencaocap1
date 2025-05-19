@@ -7,57 +7,109 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ClosedXML.Excel; // Cần thiết cho ExportToExcel nếu sử dụng ClosedXML
-					   // using System.Data.SqlClient; // Có thể không cần nếu chỉ dùng SQLite // Đã comment lại vì không thấy sử dụng
+using ClosedXML.Excel;
 using System.Windows.Forms;
-using QRCoder; // Namespace cho thư viện QR
+using QRCoder;
+
 namespace ungdungthuviencaocap
 {
 	class Modify
 	{
-		SQLiteDataAdapter dataAdapter; // Sẽ truy xuất dữ liệu vào bảng dữ liệu
-		SQLiteCommand sqlcommand; // Dùng để truy vấn và cập nhật tới CSDL
-		private static Random randomAuthorCodeGenerator = new Random(); // Đối tượng Random để tạo mã
-		private static Random random = new Random();
+		SQLiteDataAdapter dataAdapter;
+		SQLiteCommand sqlcommand;
+		private static Random randomGenerator = new Random();
+
 		public Modify()
 		{
 		}
 
-		/// <summary>
-		/// Tạo một chuỗi mã ngẫu nhiên gồm chữ hoa và số.
-		/// </summary>
-		/// <param name="length">Độ dài của mã cần tạo (mặc định là 8).</param>
-		/// <returns>Chuỗi mã ngẫu nhiên.</returns>
-		public string GenerateRandomAlphaNumericCode(int length = 8)
+		public string GenerateRandomAlphaNumericCode(int length = 8, string prefix = "")
 		{
 			const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-			return new string(Enumerable.Repeat(chars, length)
-			  .Select(s => s[randomAuthorCodeGenerator.Next(s.Length)]).ToArray());
+			string randomPart = new string(Enumerable.Repeat(chars, length)
+			  .Select(s => s[randomGenerator.Next(s.Length)]).ToArray());
+			return prefix + randomPart;
 		}
 
-		/// <summary>
-		/// Kiểm tra xem một MaTacGia đã tồn tại trong CSDL hay chưa (không phân biệt hoa thường).
-		/// </summary>
-		/// <param name="maTacGia">Mã tác giả cần kiểm tra.</param>
-		/// <param name="connection">Đối tượng SQLiteConnection đang mở.</param>
-		/// <returns>True nếu mã là duy nhất, False nếu đã tồn tại.</returns>
 		private bool IsMaTacGiaUnique(string maTacGia, SQLiteConnection connection)
 		{
-			// Sử dụng COLLATE NOCASE để kiểm tra không phân biệt hoa thường
 			string checkQuery = "SELECT COUNT(*) FROM tacgia WHERE MaTacGia = @MaTacGia COLLATE NOCASE";
 			using (SQLiteCommand checkCmd = new SQLiteCommand(checkQuery, connection))
 			{
 				checkCmd.Parameters.AddWithValue("@MaTacGia", maTacGia);
 				long count = (long)checkCmd.ExecuteScalar();
-				return count == 0; // Mã là duy nhất nếu count = 0
+				return count == 0;
+			}
+		}
+		private bool IsTenTacGiaUnique(string hoTen, SQLiteConnection connection, int currentIdToExclude = 0)
+		{
+			string query = "SELECT COUNT(*) FROM tacgia WHERE HoTen = @HoTen COLLATE NOCASE";
+			if (currentIdToExclude > 0)
+			{
+				query += " AND ID != @ID";
+			}
+			using (SQLiteCommand cmd = new SQLiteCommand(query, connection))
+			{
+				cmd.Parameters.AddWithValue("@HoTen", hoTen);
+				if (currentIdToExclude > 0)
+				{
+					cmd.Parameters.AddWithValue("@ID", currentIdToExclude);
+				}
+				long count = (long)cmd.ExecuteScalar();
+				return count == 0;
 			}
 		}
 
-		/// <summary>
-		/// Kiểm tra xem tác giả có tồn tại dựa trên Họ Tên hay không (không phân biệt hoa thường).
-		/// </summary>
-		/// <param name="hoTen">Họ tên tác giả cần kiểm tra.</param>
-		/// <returns>True nếu tác giả đã tồn tại, False nếu chưa.</returns>
+
+		private bool IsMaNhaXuatBanUnique(string maNXB, SQLiteConnection connection)
+		{
+			string checkQuery = "SELECT COUNT(*) FROM NhaXuatBan WHERE MaNhaXuatBan = @MaNhaXuatBan COLLATE NOCASE";
+			using (SQLiteCommand checkCmd = new SQLiteCommand(checkQuery, connection))
+			{
+				checkCmd.Parameters.AddWithValue("@MaNhaXuatBan", maNXB);
+				long count = (long)checkCmd.ExecuteScalar();
+				return count == 0;
+			}
+		}
+		private bool IsTenNhaXuatBanUnique(string tenNXB, SQLiteConnection connection, int currentIdToExclude = 0)
+		{
+			string query = "SELECT COUNT(*) FROM NhaXuatBan WHERE TenNhaXuatBan = @TenNhaXuatBan COLLATE NOCASE";
+			if (currentIdToExclude > 0)
+			{
+				query += " AND ID != @ID";
+			}
+			using (SQLiteCommand cmd = new SQLiteCommand(query, connection))
+			{
+				cmd.Parameters.AddWithValue("@TenNhaXuatBan", tenNXB);
+				if (currentIdToExclude > 0)
+				{
+					cmd.Parameters.AddWithValue("@ID", currentIdToExclude);
+				}
+				long count = (long)cmd.ExecuteScalar();
+				return count == 0;
+			}
+		}
+
+		private bool IsTenTheLoaiUnique(string tenTheLoai, SQLiteConnection connection, int currentIdToExclude = 0)
+		{
+			string query = "SELECT COUNT(*) FROM TheLoai WHERE TenTheLoai = @TenTheLoai COLLATE NOCASE";
+			if (currentIdToExclude > 0)
+			{
+				query += " AND ID != @ID";
+			}
+			using (SQLiteCommand cmd = new SQLiteCommand(query, connection))
+			{
+				cmd.Parameters.AddWithValue("@TenTheLoai", tenTheLoai);
+				if (currentIdToExclude > 0)
+				{
+					cmd.Parameters.AddWithValue("@ID", currentIdToExclude);
+				}
+				long count = (long)cmd.ExecuteScalar();
+				return count == 0;
+			}
+		}
+
+
 		public bool DoesAuthorExistByName(string hoTen)
 		{
 			string query = "SELECT COUNT(*) FROM tacgia WHERE HoTen = @HoTen COLLATE NOCASE";
@@ -80,38 +132,85 @@ namespace ungdungthuviencaocap
 				}
 			}
 		}
-
-
-		/// <summary>
-		/// Thêm một tác giả mới vào bảng tacgia. Tự động tạo MaTacGia duy nhất.
-		/// </summary>
-		/// <param name="tacGia">Đối tượng TacGia chứa thông tin cần thêm (MaTacGia sẽ được ghi đè).</param>
-		/// <returns>True nếu thêm thành công, False nếu thất bại.</returns>
-		public bool InsertTacGia(TacGia tacGia)
+		public TacGia GetTacGiaByName(string hoTen)
 		{
-			string uniqueMaTacGia;
-			bool isUnique = false;
-			int attempts = 0;
-			const int maxAttempts = 20;
+			TacGia author = null;
+			string query = "SELECT * FROM tacgia WHERE HoTen = @HoTen COLLATE NOCASE LIMIT 1";
+			using (SQLiteConnection conn = Connection.GetSQLiteConnection())
+			{
+				try
+				{
+					conn.Open();
+					using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
+					{
+						cmd.Parameters.AddWithValue("@HoTen", hoTen);
+						using (SQLiteDataReader reader = cmd.ExecuteReader())
+						{
+							if (reader.Read())
+							{
+								author = new TacGia
+								{
+									ID = reader.GetInt32(reader.GetOrdinal("ID")),
+									MaTacGia = reader.GetString(reader.GetOrdinal("MaTacGia")),
+									HoTen = reader.GetString(reader.GetOrdinal("HoTen")),
+									// Lấy các trường khác nếu cần
+								};
+							}
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine($"Lỗi khi lấy tác giả theo tên '{hoTen}': {ex.Message}");
+				}
+			}
+			return author;
+		}
 
+
+		public bool InsertTacGia(TacGia tacGia, bool generateMaTacGia = true)
+		{
 			using (SQLiteConnection sqlConnection = Connection.GetSQLiteConnection())
 			{
 				try
 				{
 					sqlConnection.Open();
-					do
+
+					if (!IsTenTacGiaUnique(tacGia.HoTen, sqlConnection))
 					{
-						uniqueMaTacGia = GenerateRandomAlphaNumericCode(8);
-						isUnique = IsMaTacGiaUnique(uniqueMaTacGia, sqlConnection);
-						attempts++;
-						if (attempts > maxAttempts)
+						// Không tự động báo lỗi ở đây, để lớp gọi xử lý
+						Console.WriteLine($"Tên tác giả '{tacGia.HoTen}' đã tồn tại.");
+						return false; // Hoặc có thể throw exception tùy theo thiết kế
+					}
+
+					if (generateMaTacGia || string.IsNullOrWhiteSpace(tacGia.MaTacGia))
+					{
+						string uniqueMaTacGia;
+						bool isUnique = false;
+						int attempts = 0;
+						const int maxAttempts = 20;
+						do
 						{
-							MessageBox.Show($"Không thể tạo Mã Tác Giả duy nhất sau {maxAttempts} lần thử. Vui lòng thử lại.", "Lỗi Hệ Thống", MessageBoxButtons.OK, MessageBoxIcon.Error);
+							uniqueMaTacGia = GenerateRandomAlphaNumericCode(8, "TG");
+							isUnique = IsMaTacGiaUnique(uniqueMaTacGia, sqlConnection);
+							attempts++;
+							if (attempts > maxAttempts)
+							{
+								MessageBox.Show($"Không thể tạo Mã Tác Giả duy nhất sau {maxAttempts} lần thử.", "Lỗi Hệ Thống", MessageBoxButtons.OK, MessageBoxIcon.Error);
+								return false;
+							}
+						} while (!isUnique);
+						tacGia.MaTacGia = uniqueMaTacGia;
+					}
+					else // Kiểm tra mã cung cấp có unique không
+					{
+						if (!IsMaTacGiaUnique(tacGia.MaTacGia, sqlConnection))
+						{
+							MessageBox.Show($"Mã Tác Giả '{tacGia.MaTacGia}' đã tồn tại.", "Lỗi Trùng Lặp", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 							return false;
 						}
-					} while (!isUnique);
+					}
 
-					tacGia.MaTacGia = uniqueMaTacGia;
 
 					string query = @"INSERT INTO tacgia
                             (MaTacGia, HoTen, HocHam, HocVi, DiaChi, Email, NgaySinh, QuocTich, Anh, TieuSu, TrangThai)
@@ -130,7 +229,7 @@ namespace ungdungthuviencaocap
 						sqlCommand.Parameters.AddWithValue("@QuocTich", (object)tacGia.QuocTich ?? DBNull.Value);
 						sqlCommand.Parameters.AddWithValue("@Anh", (object)tacGia.Anh ?? DBNull.Value);
 						sqlCommand.Parameters.AddWithValue("@TieuSu", (object)tacGia.TieuSu ?? DBNull.Value);
-						sqlCommand.Parameters.AddWithValue("@TrangThai", (object)tacGia.TrangThai ?? DBNull.Value);
+						sqlCommand.Parameters.AddWithValue("@TrangThai", (object)tacGia.TrangThai ?? "Hoạt động");
 
 						int rowsAffected = sqlCommand.ExecuteNonQuery();
 						return rowsAffected > 0;
@@ -138,7 +237,14 @@ namespace ungdungthuviencaocap
 				}
 				catch (SQLiteException ex)
 				{
-					MessageBox.Show($"Lỗi CSDL khi thêm tác giả: {ex.Message} (Mã lỗi: {ex.ErrorCode})", "Lỗi CSDL", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					if (ex.ErrorCode == (int)SQLiteErrorCode.Constraint_Unique || ex.Message.ToUpper().Contains("UNIQUE CONSTRAINT FAILED"))
+					{
+						MessageBox.Show($"Lỗi: Mã tác giả '{tacGia.MaTacGia}' hoặc tên tác giả '{tacGia.HoTen}' đã tồn tại.", "Lỗi Trùng Lặp", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					}
+					else
+					{
+						MessageBox.Show($"Lỗi CSDL khi thêm tác giả: {ex.Message} (Mã lỗi: {ex.ErrorCode})", "Lỗi CSDL", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					}
 					Console.WriteLine($"SQLite Error inserting author (Code {ex.ErrorCode}): {ex.Message}");
 					return false;
 				}
@@ -150,6 +256,34 @@ namespace ungdungthuviencaocap
 				}
 			}
 		}
+
+		public bool AddTacGiaIfNotExists(string hoTenTacGia)
+		{
+			if (string.IsNullOrWhiteSpace(hoTenTacGia))
+			{
+				return false; // Không thêm nếu tên rỗng
+			}
+
+			TacGia existingTacGia = GetTacGiaByName(hoTenTacGia);
+			if (existingTacGia == null)
+			{
+				TacGia newTacGia = new TacGia
+				{
+					HoTen = hoTenTacGia,
+					// Các trường khác có thể để null hoặc giá trị mặc định
+					TrangThai = "Hoạt động"
+				};
+				// Mã tác giả sẽ được tạo tự động trong InsertTacGia
+				bool result = InsertTacGia(newTacGia, true);
+				if (result)
+				{
+					Console.WriteLine($"Đã tự động thêm tác giả mới: '{hoTenTacGia}' (Mã: {newTacGia.MaTacGia})");
+				}
+				return result;
+			}
+			return true; // Đã tồn tại, coi như thành công
+		}
+
 
 		public List<TacGia> GetAuthorsByName(string hoTen)
 		{
@@ -242,6 +376,35 @@ namespace ungdungthuviencaocap
 			}
 			return dataTable;
 		}
+		public List<string> GetAllAuthorNames()
+		{
+			List<string> authorNames = new List<string>();
+			string query = "SELECT DISTINCT HoTen FROM tacgia WHERE HoTen IS NOT NULL AND HoTen != '' ORDER BY HoTen ASC";
+			using (SQLiteConnection conn = Connection.GetSQLiteConnection())
+			{
+				try
+				{
+					conn.Open();
+					using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
+					{
+						using (SQLiteDataReader reader = cmd.ExecuteReader())
+						{
+							while (reader.Read())
+							{
+								authorNames.Add(reader.GetString(0));
+							}
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show($"Lỗi khi lấy danh sách tên tác giả: {ex.Message}", "Lỗi CSDL", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					Console.WriteLine($"Error getting all author names: {ex.Message}");
+				}
+			}
+			return authorNames;
+		}
+
 
 		public bool UpdateAuthorImage(int authorId, string relativeImagePath)
 		{
@@ -301,22 +464,28 @@ namespace ungdungthuviencaocap
 				return false;
 			}
 
-			string query = @"UPDATE tacgia
-                         SET HoTen = @HoTen,
-                             NgaySinh = @NgaySinh,
-                             DiaChi = @DiaChi,
-                             QuocTich = @QuocTich,
-                             Email = @Email,
-                             TrangThai = @TrangThai,
-                             HocHam = @HocHam,
-                             HocVi = @HocVi
-                         WHERE ID = @ID";
-
 			using (SQLiteConnection conn = Connection.GetSQLiteConnection())
 			{
 				try
 				{
 					conn.Open();
+					if (!IsTenTacGiaUnique(author.HoTen, conn, author.ID))
+					{
+						MessageBox.Show($"Tên tác giả '{author.HoTen}' đã được sử dụng bởi tác giả khác.", "Lỗi Trùng Lặp", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						return false;
+					}
+
+					string query = @"UPDATE tacgia
+    						 SET HoTen = @HoTen,
+    							 NgaySinh = @NgaySinh,
+    							 DiaChi = @DiaChi,
+    							 QuocTich = @QuocTich,
+    							 Email = @Email,
+    							 TrangThai = @TrangThai,
+    							 HocHam = @HocHam,
+    							 HocVi = @HocVi
+    						 WHERE ID = @ID";
+
 					using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
 					{
 						cmd.Parameters.AddWithValue("@HoTen", author.HoTen ?? (object)DBNull.Value);
@@ -333,10 +502,16 @@ namespace ungdungthuviencaocap
 						return rowsAffected > 0;
 					}
 				}
-				catch (Exception ex)
+				catch (SQLiteException ex)
 				{
 					MessageBox.Show($"Lỗi CSDL khi cập nhật thông tin tác giả (ID: {author.ID}): {ex.Message}", "Lỗi CSDL", MessageBoxButtons.OK, MessageBoxIcon.Error);
 					Console.WriteLine($"DB Error Updating Author Info (ID: {author.ID}): {ex.Message}");
+					return false;
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show($"Lỗi không mong muốn khi cập nhật thông tin tác giả (ID: {author.ID}): {ex.Message}", "Lỗi Hệ Thống", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					Console.WriteLine($"Error Updating Author Info (ID: {author.ID}): {ex.Message}");
 					return false;
 				}
 			}
@@ -368,15 +543,9 @@ namespace ungdungthuviencaocap
 			return dataTable;
 		}
 
-		/// <summary>
-		/// Lấy danh sách các sách dựa trên tên thể loại (không phân biệt hoa thường).
-		/// </summary>
-		/// <param name="categoryName">Tên thể loại cần tìm.</param>
-		/// <returns>DataTable chứa thông tin các sách thuộc thể loại đó.</returns>
 		public DataTable GetBooksByCategoryName(string categoryName)
 		{
 			DataTable dataTable = new DataTable();
-			// Lấy tất cả các cột cần thiết từ bảng quanlysach
 			string query = @"SELECT ID, Masach, TenSach, TheLoai, TacGia, SoLuong, NhaXuatBan, NamXuatBan, anh, pdf, tomtatnoidung
                        FROM quanlysach
                        WHERE TheLoai = @CategoryName COLLATE NOCASE
@@ -388,7 +557,6 @@ namespace ungdungthuviencaocap
 				{
 					conn.Open();
 					SQLiteDataAdapter adapter = new SQLiteDataAdapter(query, conn);
-					// Thêm tham số cho tên thể loại, xử lý trường hợp null
 					adapter.SelectCommand.Parameters.AddWithValue("@CategoryName", string.IsNullOrEmpty(categoryName) ? (object)DBNull.Value : categoryName);
 					adapter.Fill(dataTable);
 				}
@@ -396,7 +564,6 @@ namespace ungdungthuviencaocap
 				{
 					MessageBox.Show($"Lỗi khi lấy sách theo thể loại '{categoryName}': {ex.Message}", "Lỗi CSDL", MessageBoxButtons.OK, MessageBoxIcon.Error);
 					Console.WriteLine($"Error getting books by category name '{categoryName}': {ex.Message}");
-					// Trả về DataTable rỗng trong trường hợp lỗi
 				}
 			}
 			return dataTable;
@@ -407,7 +574,7 @@ namespace ungdungthuviencaocap
 		{
 			const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 			return new string(Enumerable.Repeat(chars, length)
-			  .Select(s => s[random.Next(s.Length)]).ToArray());
+			  .Select(s => s[randomGenerator.Next(s.Length)]).ToArray());
 		}
 
 		internal bool CheckDuplicateBook(sachquanly sach)
@@ -510,21 +677,58 @@ namespace ungdungthuviencaocap
 			}
 			return dataTable;
 		}
-
-		public bool InsertTheLoai(string maTheLoai, string tenTheLoai, string moTa, string trangThai)
+		public List<string> GetAllTenTheLoai()
 		{
-			string checkQuery = "SELECT COUNT(*) FROM TheLoai WHERE MaTheLoai = @MaTheLoai COLLATE NOCASE";
+			List<string> tenTheLoaiList = new List<string>();
+			string query = "SELECT DISTINCT TenTheLoai FROM TheLoai WHERE TenTheLoai IS NOT NULL AND TenTheLoai != '' ORDER BY TenTheLoai ASC";
 			using (SQLiteConnection conn = Connection.GetSQLiteConnection())
 			{
 				try
 				{
 					conn.Open();
+					using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
+					{
+						using (SQLiteDataReader reader = cmd.ExecuteReader())
+						{
+							while (reader.Read())
+							{
+								tenTheLoaiList.Add(reader.GetString(0));
+							}
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show($"Lỗi khi lấy danh sách tên thể loại: {ex.Message}", "Lỗi CSDL", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					Console.WriteLine($"Error getting all category names: {ex.Message}");
+				}
+			}
+			return tenTheLoaiList;
+		}
+
+
+		public bool InsertTheLoai(string maTheLoai, string tenTheLoai, string moTa, string trangThai)
+		{
+			using (SQLiteConnection conn = Connection.GetSQLiteConnection())
+			{
+				try
+				{
+					conn.Open();
+					if (!IsTenTheLoaiUnique(tenTheLoai, conn))
+					{
+						// Không báo lỗi ở đây, để lớp gọi xử lý
+						Console.WriteLine($"Tên thể loại '{tenTheLoai}' đã tồn tại.");
+						return false;
+					}
+
+					string checkQuery = "SELECT COUNT(*) FROM TheLoai WHERE MaTheLoai = @MaTheLoai COLLATE NOCASE";
 					using (SQLiteCommand checkCmd = new SQLiteCommand(checkQuery, conn))
 					{
 						checkCmd.Parameters.AddWithValue("@MaTheLoai", maTheLoai);
 						long count = (long)checkCmd.ExecuteScalar();
 						if (count > 0)
 						{
+							MessageBox.Show($"Mã thể loại '{maTheLoai}' đã tồn tại.", "Lỗi Trùng Lặp", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 							return false;
 						}
 					}
@@ -536,7 +740,7 @@ namespace ungdungthuviencaocap
 						cmd.Parameters.AddWithValue("@MaTheLoai", maTheLoai);
 						cmd.Parameters.AddWithValue("@TenTheLoai", tenTheLoai ?? (object)DBNull.Value);
 						cmd.Parameters.AddWithValue("@MoTa", string.IsNullOrEmpty(moTa) ? (object)DBNull.Value : moTa);
-						cmd.Parameters.AddWithValue("@TrangThai", string.IsNullOrEmpty(trangThai) ? (object)DBNull.Value : trangThai);
+						cmd.Parameters.AddWithValue("@TrangThai", string.IsNullOrEmpty(trangThai) ? (object)DBNull.Value : "Hoạt động");
 
 						int rowsAffected = cmd.ExecuteNonQuery();
 						return rowsAffected > 0;
@@ -544,7 +748,14 @@ namespace ungdungthuviencaocap
 				}
 				catch (SQLiteException ex)
 				{
-					Console.WriteLine($"Lỗi CSDL khi thêm thể loại: {ex.Message} (Mã lỗi: {ex.ErrorCode})");
+					if (ex.ErrorCode == (int)SQLiteErrorCode.Constraint_Unique || ex.Message.ToUpper().Contains("UNIQUE CONSTRAINT FAILED"))
+					{
+						MessageBox.Show($"Lỗi: Mã thể loại '{maTheLoai}' hoặc tên thể loại '{tenTheLoai}' đã tồn tại.", "Lỗi Trùng Lặp", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					}
+					else
+					{
+						Console.WriteLine($"Lỗi CSDL khi thêm thể loại: {ex.Message} (Mã lỗi: {ex.ErrorCode})");
+					}
 					return false;
 				}
 				catch (Exception ex)
@@ -557,13 +768,18 @@ namespace ungdungthuviencaocap
 
 		public bool UpdateTheLoai(int id, string maTheLoai, string tenTheLoai, string moTa, string trangThai)
 		{
-			string checkDuplicateQuery = "SELECT COUNT(*) FROM TheLoai WHERE MaTheLoai = @MaTheLoai COLLATE NOCASE AND ID != @ID";
-
 			using (SQLiteConnection conn = Connection.GetSQLiteConnection())
 			{
 				try
 				{
 					conn.Open();
+					if (!IsTenTheLoaiUnique(tenTheLoai, conn, id))
+					{
+						MessageBox.Show($"Tên thể loại '{tenTheLoai}' đã được sử dụng bởi thể loại khác.", "Lỗi Trùng Lặp", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						return false;
+					}
+
+					string checkDuplicateQuery = "SELECT COUNT(*) FROM TheLoai WHERE MaTheLoai = @MaTheLoai COLLATE NOCASE AND ID != @ID";
 					using (SQLiteCommand checkCmd = new SQLiteCommand(checkDuplicateQuery, conn))
 					{
 						checkCmd.Parameters.AddWithValue("@MaTheLoai", maTheLoai);
@@ -571,6 +787,7 @@ namespace ungdungthuviencaocap
 						long count = (long)checkCmd.ExecuteScalar();
 						if (count > 0)
 						{
+							MessageBox.Show($"Mã thể loại '{maTheLoai}' đã được sử dụng bởi thể loại khác.", "Lỗi Trùng Lặp", MessageBoxButtons.OK, MessageBoxIcon.Error);
 							Console.WriteLine($"Lỗi CSDL khi cập nhật thể loại (ID: {id}): Mã thể loại '{maTheLoai}' đã được sử dụng bởi thể loại khác.");
 							return false;
 						}
@@ -597,11 +814,13 @@ namespace ungdungthuviencaocap
 				}
 				catch (SQLiteException ex)
 				{
+					MessageBox.Show($"Lỗi CSDL khi cập nhật thể loại (ID: {id}): {ex.Message}", "Lỗi CSDL", MessageBoxButtons.OK, MessageBoxIcon.Error);
 					Console.WriteLine($"Lỗi CSDL khi cập nhật thể loại (ID: {id}): {ex.Message} (Mã lỗi: {ex.ErrorCode})");
 					return false;
 				}
 				catch (Exception ex)
 				{
+					MessageBox.Show($"Lỗi không mong muốn khi cập nhật thể loại (ID: {id}): {ex.Message}", "Lỗi Hệ Thống", MessageBoxButtons.OK, MessageBoxIcon.Error);
 					Console.WriteLine($"Lỗi không mong muốn khi cập nhật thể loại (ID: {id}): {ex.Message}");
 					throw;
 				}
@@ -663,26 +882,6 @@ namespace ungdungthuviencaocap
 					return null;
 				}
 			}
-		}
-
-		public DataTable getAllbook()
-		{
-			DataTable dataTable = new DataTable();
-			try
-			{
-				string query = "SELECT ID, Masach, TenSach, TheLoai, TacGia, SoLuong, NhaXuatBan, NamXuatBan, anh, pdf, tomtatnoidung FROM quanlysach ORDER BY TenSach ASC";
-				using (SQLiteConnection sqlConnection = Connection.GetSQLiteConnection())
-				{
-					sqlConnection.Open();
-					dataAdapter = new SQLiteDataAdapter(query, sqlConnection);
-					dataAdapter.Fill(dataTable);
-				}
-			}
-			catch (Exception ex)
-			{
-				MessageBox.Show($"Lỗi khi lấy danh sách sách: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-			}
-			return dataTable;
 		}
 
 		public bool Insert(sachquanly sachquanly)
@@ -857,27 +1056,34 @@ namespace ungdungthuviencaocap
 				using (var reader = ExcelReaderFactory.CreateReader(stream))
 				{
 					var result = reader.AsDataSet();
-					var table = result.Tables[0];
-
-					for (int i = 1; i < table.Rows.Count; i++)
+					if (result.Tables.Count > 0)
 					{
-						var row = table.Rows[i];
-						var book = new sachquanly
+						var table = result.Tables[0];
+						for (int i = 1; i < table.Rows.Count; i++)
 						{
-							ID = Convert.ToInt32(row[0]),
-							Masach = row[1].ToString(),
-							Tensach = row[2].ToString(),
-							Theloai = row[3].ToString(),
-							Tacgia = row[4].ToString(),
-							Soluong = Convert.ToInt32(row[5]),
-							Nhaxuatban = row[6].ToString(),
-							Namxuatban = Convert.ToInt32(row[7])
-						};
-						books.Add(book);
+							var row = table.Rows[i];
+							try
+							{
+								var book = new sachquanly
+								{
+									Masach = row[0].ToString(),
+									Tensach = row[1].ToString(),
+									Theloai = row[2].ToString(),
+									Tacgia = row[3].ToString(),
+									Soluong = Convert.ToInt32(row[4]),
+									Nhaxuatban = row[5].ToString(),
+									Namxuatban = Convert.ToInt32(row[6])
+								};
+								books.Add(book);
+							}
+							catch (Exception ex)
+							{
+								Console.WriteLine($"Lỗi khi đọc dòng {i + 1} từ Excel: {ex.Message}. Dữ liệu: {string.Join(", ", row.ItemArray)}");
+							}
+						}
 					}
 				}
 			}
-
 			return books;
 		}
 		public DataTable searchBooks(string keyword, SQLiteConnection sqlConnection = null)
@@ -886,7 +1092,10 @@ namespace ungdungthuviencaocap
 			string query = @"SELECT ID, Masach, TenSach, TheLoai, TacGia, SoLuong, NhaXuatBan, NamXuatBan, anh, pdf, tomtatnoidung
                            FROM quanlysach
                            WHERE TenSach LIKE @Keyword COLLATE NOCASE
-                              OR Masach LIKE @Keyword COLLATE NOCASE";
+                              OR Masach LIKE @Keyword COLLATE NOCASE
+                              OR TacGia LIKE @Keyword COLLATE NOCASE 
+                              OR TheLoai LIKE @Keyword COLLATE NOCASE
+                              OR NhaXuatBan LIKE @Keyword COLLATE NOCASE";
 			using (SQLiteConnection conn = Connection.GetSQLiteConnection())
 			{
 				try
@@ -1119,7 +1328,7 @@ namespace ungdungthuviencaocap
 
 		public void ExportToExcel(string filePath)
 		{
-			DataTable dtBooks = getAllbook();
+			DataTable dtBooks = getAllbooks();
 			DataTable dtBorrowBooks = getAllphieu();
 
 			using (var workbook = new XLWorkbook())
@@ -1132,7 +1341,7 @@ namespace ungdungthuviencaocap
 
 		public void ExportToExcelquanlysach(string filePath)
 		{
-			DataTable dtBooks = getAllbook();
+			DataTable dtBooks = getAllbooks();
 			using (var workbook = new XLWorkbook())
 			{
 				var worksheetBooks = workbook.Worksheets.Add(dtBooks, "QuanLySach");
@@ -1637,5 +1846,290 @@ namespace ungdungthuviencaocap
 				}
 			}
 		}
+
+		// --- Methods for NhaXuatBan ---
+		public DataTable GetAllNhaXuatBan()
+		{
+			DataTable dataTable = new DataTable();
+			string query = "SELECT ID, MaNhaXuatBan, TenNhaXuatBan, DiaChi, SoHieuXuatBan, Email, Website, NgayThanhLap, TrangThai FROM NhaXuatBan ORDER BY TenNhaXuatBan ASC";
+			using (SQLiteConnection sqlConnection = Connection.GetSQLiteConnection())
+			{
+				try
+				{
+					sqlConnection.Open();
+					SQLiteDataAdapter adapter = new SQLiteDataAdapter(query, sqlConnection);
+					adapter.Fill(dataTable);
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show($"Lỗi khi lấy danh sách nhà xuất bản: {ex.Message}", "Lỗi CSDL", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					Console.WriteLine($"Error getting all publishers: {ex.Message}");
+				}
+			}
+			return dataTable;
+		}
+		public List<string> GetAllTenNhaXuatBan()
+		{
+			List<string> tenNXBList = new List<string>();
+			string query = "SELECT DISTINCT TenNhaXuatBan FROM NhaXuatBan WHERE TenNhaXuatBan IS NOT NULL AND TenNhaXuatBan != '' ORDER BY TenNhaXuatBan ASC";
+			using (SQLiteConnection conn = Connection.GetSQLiteConnection())
+			{
+				try
+				{
+					conn.Open();
+					using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
+					{
+						using (SQLiteDataReader reader = cmd.ExecuteReader())
+						{
+							while (reader.Read())
+							{
+								tenNXBList.Add(reader.GetString(0));
+							}
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show($"Lỗi khi lấy danh sách tên nhà xuất bản: {ex.Message}", "Lỗi CSDL", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					Console.WriteLine($"Error getting all publisher names: {ex.Message}");
+				}
+			}
+			return tenNXBList;
+		}
+
+		public NhaXuatBan GetNhaXuatBanByName(string tenNXB)
+		{
+			NhaXuatBan nxb = null;
+			string query = "SELECT * FROM NhaXuatBan WHERE TenNhaXuatBan = @TenNhaXuatBan COLLATE NOCASE LIMIT 1";
+			using (SQLiteConnection conn = Connection.GetSQLiteConnection())
+			{
+				try
+				{
+					conn.Open();
+					using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
+					{
+						cmd.Parameters.AddWithValue("@TenNhaXuatBan", tenNXB);
+						using (SQLiteDataReader reader = cmd.ExecuteReader())
+						{
+							if (reader.Read())
+							{
+								nxb = new NhaXuatBan
+								{
+									ID = reader.GetInt32(reader.GetOrdinal("ID")),
+									MaNhaXuatBan = reader.GetString(reader.GetOrdinal("MaNhaXuatBan")),
+									TenNhaXuatBan = reader.GetString(reader.GetOrdinal("TenNhaXuatBan")),
+									DiaChi = reader.IsDBNull(reader.GetOrdinal("DiaChi")) ? null : reader.GetString(reader.GetOrdinal("DiaChi")),
+									SoHieuXuatBan = reader.IsDBNull(reader.GetOrdinal("SoHieuXuatBan")) ? null : reader.GetString(reader.GetOrdinal("SoHieuXuatBan")),
+									Email = reader.IsDBNull(reader.GetOrdinal("Email")) ? null : reader.GetString(reader.GetOrdinal("Email")),
+									Website = reader.IsDBNull(reader.GetOrdinal("Website")) ? null : reader.GetString(reader.GetOrdinal("Website")),
+									NgayThanhLap = reader.IsDBNull(reader.GetOrdinal("NgayThanhLap")) ? null : reader.GetString(reader.GetOrdinal("NgayThanhLap")),
+									TrangThai = reader.IsDBNull(reader.GetOrdinal("TrangThai")) ? null : reader.GetString(reader.GetOrdinal("TrangThai"))
+								};
+							}
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine($"Lỗi khi lấy nhà xuất bản theo tên '{tenNXB}': {ex.Message}");
+				}
+			}
+			return nxb;
+		}
+
+		public bool InsertNhaXuatBan(NhaXuatBan nxb, bool generateMaNXB = true)
+		{
+			using (SQLiteConnection sqlConnection = Connection.GetSQLiteConnection())
+			{
+				try
+				{
+					sqlConnection.Open();
+
+					if (!IsTenNhaXuatBanUnique(nxb.TenNhaXuatBan, sqlConnection))
+					{
+						Console.WriteLine($"Tên nhà xuất bản '{nxb.TenNhaXuatBan}' đã tồn tại.");
+						return false;
+					}
+
+					if (generateMaNXB || string.IsNullOrWhiteSpace(nxb.MaNhaXuatBan))
+					{
+						string uniqueMaNXB;
+						bool isUnique = false;
+						int attempts = 0;
+						const int maxAttempts = 20;
+						do
+						{
+							uniqueMaNXB = GenerateRandomAlphaNumericCode(6, "NXB");
+							isUnique = IsMaNhaXuatBanUnique(uniqueMaNXB, sqlConnection);
+							attempts++;
+							if (attempts > maxAttempts)
+							{
+								MessageBox.Show($"Không thể tạo Mã Nhà Xuất Bản duy nhất sau {maxAttempts} lần thử.", "Lỗi Hệ Thống", MessageBoxButtons.OK, MessageBoxIcon.Error);
+								return false;
+							}
+						} while (!isUnique);
+						nxb.MaNhaXuatBan = uniqueMaNXB;
+					}
+					else
+					{
+						if (!IsMaNhaXuatBanUnique(nxb.MaNhaXuatBan, sqlConnection))
+						{
+							MessageBox.Show($"Mã Nhà Xuất Bản '{nxb.MaNhaXuatBan}' đã tồn tại.", "Lỗi Trùng Lặp", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+							return false;
+						}
+					}
+
+
+					string query = @"INSERT INTO NhaXuatBan 
+                                    (MaNhaXuatBan, TenNhaXuatBan, DiaChi, SoHieuXuatBan, Email, Website, NgayThanhLap, TrangThai)
+                                    VALUES 
+                                    (@MaNhaXuatBan, @TenNhaXuatBan, @DiaChi, @SoHieuXuatBan, @Email, @Website, @NgayThanhLap, @TrangThai)";
+					using (SQLiteCommand cmd = new SQLiteCommand(query, sqlConnection))
+					{
+						cmd.Parameters.AddWithValue("@MaNhaXuatBan", nxb.MaNhaXuatBan);
+						cmd.Parameters.AddWithValue("@TenNhaXuatBan", nxb.TenNhaXuatBan);
+						cmd.Parameters.AddWithValue("@DiaChi", (object)nxb.DiaChi ?? DBNull.Value);
+						cmd.Parameters.AddWithValue("@SoHieuXuatBan", (object)nxb.SoHieuXuatBan ?? DBNull.Value);
+						cmd.Parameters.AddWithValue("@Email", (object)nxb.Email ?? DBNull.Value);
+						cmd.Parameters.AddWithValue("@Website", (object)nxb.Website ?? DBNull.Value);
+						cmd.Parameters.AddWithValue("@NgayThanhLap", string.IsNullOrEmpty(nxb.NgayThanhLap) ? (object)DBNull.Value : nxb.NgayThanhLap);
+						cmd.Parameters.AddWithValue("@TrangThai", (object)nxb.TrangThai ?? "Hoạt động");
+
+						int rowsAffected = cmd.ExecuteNonQuery();
+						return rowsAffected > 0;
+					}
+				}
+				catch (SQLiteException ex)
+				{
+					if (ex.ErrorCode == (int)SQLiteErrorCode.Constraint_Unique || ex.Message.ToUpper().Contains("UNIQUE CONSTRAINT FAILED"))
+					{
+						MessageBox.Show($"Lỗi: Mã nhà xuất bản '{nxb.MaNhaXuatBan}' hoặc Tên nhà xuất bản '{nxb.TenNhaXuatBan}' đã tồn tại.", "Lỗi Trùng Lặp", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					}
+					else
+					{
+						MessageBox.Show($"Lỗi CSDL khi thêm nhà xuất bản: {ex.Message} (Mã lỗi: {ex.ErrorCode})", "Lỗi CSDL", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					}
+					Console.WriteLine($"SQLite Error inserting publisher (Code {ex.ErrorCode}): {ex.Message}");
+					return false;
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show($"Lỗi không mong muốn khi thêm nhà xuất bản: {ex.Message}", "Lỗi Hệ Thống", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					Console.WriteLine($"Error inserting publisher: {ex.Message}");
+					return false;
+				}
+			}
+		}
+
+		public bool UpdateNhaXuatBan(NhaXuatBan nxb)
+		{
+			if (nxb == null || nxb.ID <= 0)
+			{
+				MessageBox.Show("Thông tin nhà xuất bản không hợp lệ để cập nhật (Thiếu ID).", "Lỗi Dữ liệu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				return false;
+			}
+
+			using (SQLiteConnection conn = Connection.GetSQLiteConnection())
+			{
+				try
+				{
+					conn.Open();
+					if (!IsTenNhaXuatBanUnique(nxb.TenNhaXuatBan, conn, nxb.ID))
+					{
+						MessageBox.Show($"Tên nhà xuất bản '{nxb.TenNhaXuatBan}' đã được sử dụng bởi một nhà xuất bản khác.", "Lỗi Trùng Lặp", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+						return false;
+					}
+
+					string query = @"UPDATE NhaXuatBan
+                                 SET TenNhaXuatBan = @TenNhaXuatBan,
+                                     DiaChi = @DiaChi,
+                                     SoHieuXuatBan = @SoHieuXuatBan,
+                                     Email = @Email,
+                                     Website = @Website,
+                                     NgayThanhLap = @NgayThanhLap,
+                                     TrangThai = @TrangThai
+                                 WHERE ID = @ID";
+
+					using (SQLiteCommand cmd = new SQLiteCommand(query, conn))
+					{
+						cmd.Parameters.AddWithValue("@ID", nxb.ID);
+						cmd.Parameters.AddWithValue("@TenNhaXuatBan", nxb.TenNhaXuatBan ?? (object)DBNull.Value);
+						cmd.Parameters.AddWithValue("@DiaChi", nxb.DiaChi ?? (object)DBNull.Value);
+						cmd.Parameters.AddWithValue("@SoHieuXuatBan", nxb.SoHieuXuatBan ?? (object)DBNull.Value);
+						cmd.Parameters.AddWithValue("@Email", nxb.Email ?? (object)DBNull.Value);
+						cmd.Parameters.AddWithValue("@Website", nxb.Website ?? (object)DBNull.Value);
+						cmd.Parameters.AddWithValue("@NgayThanhLap", string.IsNullOrEmpty(nxb.NgayThanhLap) ? (object)DBNull.Value : nxb.NgayThanhLap);
+						cmd.Parameters.AddWithValue("@TrangThai", nxb.TrangThai ?? (object)DBNull.Value);
+
+						int rowsAffected = cmd.ExecuteNonQuery();
+						return rowsAffected > 0;
+					}
+				}
+				catch (SQLiteException ex)
+				{
+					MessageBox.Show($"Lỗi CSDL khi cập nhật nhà xuất bản (ID: {nxb.ID}): {ex.Message} (Mã lỗi: {ex.ErrorCode})", "Lỗi CSDL", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					Console.WriteLine($"DB Error Updating Publisher (ID: {nxb.ID}, Code: {ex.ErrorCode}): {ex.Message}");
+					return false;
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show($"Lỗi không mong muốn khi cập nhật nhà xuất bản (ID: {nxb.ID}): {ex.Message}", "Lỗi Hệ Thống", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					Console.WriteLine($"Error Updating Publisher (ID: {nxb.ID}): {ex.Message}");
+					return false;
+				}
+			}
+		}
+
+		public bool AddNhaXuatBanIfNotExists(string tenNhaXuatBan)
+		{
+			if (string.IsNullOrWhiteSpace(tenNhaXuatBan))
+			{
+				return false;
+			}
+
+			NhaXuatBan existingNXB = GetNhaXuatBanByName(tenNhaXuatBan);
+			if (existingNXB == null)
+			{
+				NhaXuatBan newNXB = new NhaXuatBan
+				{
+					TenNhaXuatBan = tenNhaXuatBan,
+					TrangThai = "Hoạt động"
+				};
+				bool result = InsertNhaXuatBan(newNXB, true);
+				if (result)
+				{
+					Console.WriteLine($"Đã tự động thêm nhà xuất bản mới: '{tenNhaXuatBan}' (Mã: {newNXB.MaNhaXuatBan})");
+				}
+				return result;
+			}
+			return true;
+		}
+
+		public DataTable GetBooksByPublisherName(string tenNhaXuatBan)
+		{
+			DataTable dataTable = new DataTable();
+			string query = @"SELECT ID, Masach, TenSach, TheLoai, TacGia, SoLuong, NhaXuatBan, NamXuatBan, anh, pdf, tomtatnoidung
+                           FROM quanlysach
+                           WHERE NhaXuatBan = @TenNhaXuatBan COLLATE NOCASE
+                           ORDER BY TenSach ASC";
+
+			using (SQLiteConnection conn = Connection.GetSQLiteConnection())
+			{
+				try
+				{
+					conn.Open();
+					SQLiteDataAdapter adapter = new SQLiteDataAdapter(query, conn);
+					adapter.SelectCommand.Parameters.AddWithValue("@TenNhaXuatBan", string.IsNullOrEmpty(tenNhaXuatBan) ? (object)DBNull.Value : tenNhaXuatBan);
+					adapter.Fill(dataTable);
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show($"Lỗi khi lấy sách theo nhà xuất bản '{tenNhaXuatBan}': {ex.Message}", "Lỗi CSDL", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					Console.WriteLine($"Error getting books by publisher name '{tenNhaXuatBan}': {ex.Message}");
+				}
+			}
+			return dataTable;
+		}
+
 	}
 }

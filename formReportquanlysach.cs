@@ -26,7 +26,7 @@ namespace ungdungthuviencaocap
 			    reportViewer1.LocalReport.ReportEmbeddedResource = "ungdungthuviencaocap.Report1.rdlc";
 				ReportDataSource reportDataSource = new ReportDataSource();
 				reportDataSource.Name = "quanlysach";
-				reportDataSource.Value = Modify.getAllbook();
+				reportDataSource.Value = Modify.getAllbooks();
 				reportViewer1.LocalReport.DataSources.Add(reportDataSource);
 				this.reportViewer1.RefreshReport();
 			}
