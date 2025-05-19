@@ -621,6 +621,7 @@
     <Compile Include="nguoidung.Designer.cs">
       <DependentUpon>nguoidung.cs</DependentUpon>
     </Compile>
+    <Compile Include="nhabanxuat.cs" />
     <Compile Include="nhaxuatban.cs">
       <SubType>Form</SubType>
     </Compile>

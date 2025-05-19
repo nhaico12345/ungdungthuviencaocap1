@@ -185,7 +185,11 @@ namespace ungdungthuviencaocap
 			try
 			{
 				// Khởi đầu tải tất cả dữ liệu sách
-				dataGridView1.DataSource = modify.getAllbook();
+				dataGridView1.DataSource = modify.getAllbooks();
+				dataGridView1.Columns["anh"].Visible=false;
+				dataGridView1.Columns["pdf"].Visible = false;
+				dataGridView1.Columns["tomtatnoidung"].Visible = false;
+				dataGridView1.Columns["ID"].Visible = false;
 				dataGridView1.Columns["TenSach"].HeaderText = "Tên sách";
 				dataGridView1.Columns["TheLoai"].HeaderText = "Thể loại";
 				dataGridView1.Columns["TacGia"].HeaderText = "Tác giả";
@@ -240,7 +244,7 @@ namespace ungdungthuviencaocap
 		private void button1_Click(object sender, EventArgs e)
 		{
 			// Khởi đầu tải tất cả dữ liệu sách
-			dataGridView1.DataSource = modify.getAllbook();
+			dataGridView1.DataSource = modify.getAllbooks();
 		}
 	}
 }

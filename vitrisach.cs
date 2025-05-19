@@ -293,7 +293,7 @@ namespace ungdungthuviencaocap
 		{
 			try
 			{
-				DataTable dtBooks = modify.getAllbook();
+				DataTable dtBooks = modify.getAllbooks();
 				comboBox_chonsachthem.DisplayMember = "TenSach";
 				comboBox_chonsachthem.ValueMember = "TenSach";
 				comboBox_chonsachthem.DataSource = dtBooks;

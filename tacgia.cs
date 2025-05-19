@@ -139,7 +139,7 @@ namespace ungdungthuviencaocap
 			try
 			{
 				dataGridView_tacpham.DataSource = null;
-				dataGridView_tacpham.DataSource = modify.getAllbook(); // Sử dụng hàm lấy sách hiện có
+				dataGridView_tacpham.DataSource = modify.getAllbooks(); // Sử dụng hàm lấy sách hiện có
 
 				if (dataGridView_tacpham.Columns.Count > 0)
 				{
@@ -586,6 +586,8 @@ namespace ungdungthuviencaocap
 		private void button_lammoi_Click_1(object sender, EventArgs e)
 		{
 			LoadBookDataGridView();
+			LoadAuthorDataGridView();
+			ClearInputFields();
 		}
 	} // Kết thúc lớp tacgia
 } // Kết thúc namespace
